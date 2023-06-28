@@ -2,6 +2,7 @@ package main
 
 import (
 	"io/ioutil"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/sqlite"
@@ -13,6 +14,16 @@ type Site struct {
 	URL      string
 	Desc     string
 	Category string
+}
+type Body struct {
+	Url      string `json:"url"`
+	Desc     string `json:"desc"`
+	Category string `json:"category"`
+	Key      string `json:"key"`
+}
+type RemBody struct {
+	Url string `json:"url"`
+	Key string `json:"key"`
 }
 
 func main() {
@@ -46,35 +57,39 @@ func main() {
 	r.POST("/api", func(c *gin.Context) {
 		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 		c.Writer.Header().Set("Access-Control-Allow-Headers", "*")
-		Url := c.Request.Header.Get("url")
-		Desc := c.Request.Header.Get("desc")
-		Category := c.Request.Header.Get("category")
-		Key := c.Request.Header.Get("key")
-		if Url == "" || Desc == "" || Category == "" || Key != string(key) {
-			c.JSON(500, gin.H{
+		body := Body{}
+		if err := c.BindJSON(&body); err != nil {
+			c.JSON(http.StatusBadRequest, "Incorrect arguments!")
+			return
+		}
+		if body.Key != string(key) {
+			c.JSON(http.StatusBadRequest, gin.H{
 				"error": "Incorrect arguments!",
 			})
 		} else {
-			if db.Select("*").Where("URL = ?", Url).Find(&Site{}).RowsAffected != 0 {
-				c.JSON(500, gin.H{
+			if db.Select("*").Where("URL = ?", body.Url).Find(&Site{}).RowsAffected != 0 {
+				c.JSON(http.StatusNotModified, gin.H{
 					"error": "Site already exists on the index!",
 				})
 			} else {
-				db.Table("sites").Create(&Site{URL: Url, Desc: Desc, Category: Category})
+				db.Table("sites").Create(&Site{URL: (body.Url), Desc: body.Desc, Category: body.Category})
 			}
 		}
 	})
 	r.DELETE("/api", func(c *gin.Context) {
 		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 		c.Writer.Header().Set("Access-Control-Allow-Headers", "*")
-		Url := c.Request.Header.Get("url")
-		Key := c.Request.Header.Get("key")
-		if Key != string(key) {
-			c.JSON(500, gin.H{
+		body := RemBody{}
+		if err := c.BindJSON(&body); err != nil {
+			c.JSON(http.StatusBadRequest, "Incorrect arguments!")
+			return
+		}
+		if body.Key != string(key) {
+			c.JSON(http.StatusBadRequest, gin.H{
 				"error": "Incorrect arguments!",
 			})
 		} else {
-			p := db.Table("sites").Where("URL = ?", Url).Delete("*").RowsAffected
+			p := db.Table("sites").Where("URL = ?", body.Url).Delete("*").RowsAffected
 			c.JSON(200, gin.H{
 				"count": p,
 			})
