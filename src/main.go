@@ -86,5 +86,5 @@ func main() {
 		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, DELETE, GET")
 		c.JSON(200, gin.H{})
 	})
-	r.Run() // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
+	r.Run("0.0.0.0:9332") // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
 }
